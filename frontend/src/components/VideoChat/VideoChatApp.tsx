@@ -14,6 +14,23 @@ interface Message {
   message: string;
 }
 
+const rtcConfig: RTCConfiguration = {
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" },
+    {
+      urls: "turn:global.relay.metered.ca:80",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+    {
+      urls: "turns:global.relay.metered.ca:443",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+  ],
+};
+
+
 const VideoChatApp = () => {
   const socketRef = useRef<Socket | null>(null);
   const localVideoRef = useRef<HTMLVideoElement>(null);
@@ -26,27 +43,32 @@ const VideoChatApp = () => {
   const [messages, setMessages] = useState<Message[]>([]);
 
   const cleanupConnection = useCallback(() => {
-    if (peerRef.current) {
-      peerRef.current.close();
-      peerRef.current = null;
-    }
 
-    const localStream = localVideoRef.current?.srcObject as MediaStream;
-    if (localStream) {
-      localStream.getTracks().forEach((track) => track.stop());
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = null;
-      }
-    }
+  if (peerRef.current) {
+    peerRef.current.close();
+    peerRef.current = null;
+  }
 
-    if (remoteVideoRef.current) {
-      remoteVideoRef.current.srcObject = null;
-    }
+  const localStream = localVideoRef.current?.srcObject as MediaStream;
 
-    setRoomId("");
-    setMessages([]);
-    setMessage("");
-  }, []);
+  if (localStream) {
+    localStream.getTracks().forEach(track => track.stop());
+  }
+
+  if (localVideoRef.current) {
+    localVideoRef.current.srcObject = null;
+  }
+
+  if (remoteVideoRef.current) {
+    remoteVideoRef.current.srcObject = null;
+  }
+
+  setRoomId("");
+  setMessages([]);
+  setMessage("");
+
+}, []);
+
 
   const startChat = useCallback(() => {
     if (socketRef.current) {
@@ -74,89 +96,82 @@ const VideoChatApp = () => {
     });
 
     socket.on("server:matched", async ({ roomId, role }) => {
-      console.log("MATCH EVENT:", roomId, role);
 
-      setRoomId(roomId);
-      setAppState("connected");
+  setRoomId(roomId);
+  setAppState("connected");
 
-      const stream = await navigator.mediaDevices.getUserMedia({
-        video: true,
-        audio: true,
-      });
+  const stream = await navigator.mediaDevices.getUserMedia({
+    video: true,
+    audio: true,
+  });
 
-      if (localVideoRef.current) {
-        localVideoRef.current.srcObject = stream;
-      }
+  if (localVideoRef.current) {
+    localVideoRef.current.srcObject = stream;
+  }
 
-      const peer = new RTCPeerConnection({
-
-  iceServers: [
-    { urls: "stun:stun.l.google.com:19302" },
-    {
-      urls: "turn:global.relay.metered.ca:80",
-      username: "openrelayproject",
-      credential: "openrelayproject",
-    },
-  ],
-});
+  const peer = new RTCPeerConnection(rtcConfig);
   peerRef.current = peer;
 
+  // Attach tracks
+  stream.getTracks().forEach(track => {
+    peer.addTrack(track, stream);
+  });
 
-      stream.getTracks().forEach((track) => {
-        peer.addTrack(track, stream);
+  // Receive remote stream
+  peer.ontrack = (event) => {
+    if (remoteVideoRef.current) {
+      remoteVideoRef.current.srcObject = event.streams[0];
+    }
+  };
+
+  // Send ICE
+  peer.onicecandidate = (event) => {
+    if (event.candidate) {
+      socket.emit("webrtc:ice", {
+        roomId,
+        candidate: event.candidate,
       });
+    }
+  };
 
-      peer.ontrack = (event) => {
-        if (remoteVideoRef.current) {
-          remoteVideoRef.current.srcObject = event.streams[0];
-        }
-      };
+  // Caller creates offer
+  if (role === "caller") {
+    const offer = await peer.createOffer();
+    await peer.setLocalDescription(offer);
 
-      peer.onicecandidate = (event) => {
-        if (event.candidate) {
-          socket.emit("webrtc:ice", {
-            roomId,
-            candidate: event.candidate,
-          });
-        }
-      };
-
-      if (role === "caller") {
-        const offer = await peer.createOffer();
-        await peer.setLocalDescription(offer);
-
-        socket.emit("webrtc:offer", {
-          roomId,
-          offer,
-        });
-      }
+    socket.emit("webrtc:offer", {
+      roomId,
+      offer,
     });
+  }
+});
+
 
     socket.on("webrtc:offer", async ({ offer, roomId }) => {
-      console.log("Received offer");
 
-      if (!peerRef.current) return;
+  if (!peerRef.current) return;
 
-      await peerRef.current.setRemoteDescription(offer);
+  await peerRef.current.setRemoteDescription(offer);
 
-      const answer = await peerRef.current.createAnswer();
-      await peerRef.current.setLocalDescription(answer);
+  const answer = await peerRef.current.createAnswer();
+  await peerRef.current.setLocalDescription(answer);
 
-      socket.emit("webrtc:answer", {
-        roomId,
-        answer,
-      });
-    });
+  socket.emit("webrtc:answer", {
+    roomId,
+    answer,
+  });
+});
+
 
     socket.on("webrtc:answer", async ({ answer }) => {
-      console.log("Received answer");
 
-      if (!peerRef.current) return;
+  if (!peerRef.current) return;
 
-      if (peerRef.current.signalingState !== "have-local-offer") return;
+  if (peerRef.current.signalingState !== "have-local-offer") return;
 
-      await peerRef.current.setRemoteDescription(answer);
-    });
+  await peerRef.current.setRemoteDescription(answer);
+});
+
 
     socket.on("webrtc:ice", async ({ candidate }) => {
       if (!peerRef.current) return;
