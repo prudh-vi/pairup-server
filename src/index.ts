@@ -3,21 +3,20 @@ import { Server } from "socket.io";
 
 const PORT = Number(process.env.PORT) || 4000;
 
-
-const httpServer = createServer();
-
-const waitingUsers: string[] = [];
-
+const httpServer = createServer((req, res) => {
+  res.writeHead(200, { "Content-Type": "text/plain" });
+  res.end("PairUp Backend Running");
+});
 
 
 
 const io = new Server(httpServer, {
-    cors: {
-        origin: "http://localhost:3000",
-
-    },
-    transports: ["websocket"],
+  cors: {
+    origin: "https://pairup-frontend.vercel.app",
+  },
+  transports: ["websocket"],
 });
+const waitingUsers: string[] = [];
 
 io.on("connection",(socket) => {
     console.log("Client Connected", socket.id);
@@ -108,11 +107,9 @@ io.on("connection",(socket) => {
 
 
 
-
-httpServer.listen(PORT, () => {
-  console.log(`Server running on http://localhost:${PORT}`);
+httpServer.listen(PORT, "0.0.0.0", () => {
+  console.log(`Server running on port ${PORT}`);
 });
-
 
 
 
