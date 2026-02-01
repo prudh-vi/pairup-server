@@ -134,6 +134,13 @@ const VideoChatApp = () => {
     }
   };
 
+  peer.onicecandidate = (e) => {
+  if (e.candidate) {
+    console.log(e.candidate.candidate);
+  }
+};
+
+
   // Caller creates offer
   if (role === "caller") {
     const offer = await peer.createOffer();
