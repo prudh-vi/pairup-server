@@ -58,7 +58,7 @@ const VideoChatApp = () => {
     console.log("START CHAT button clicked");
     setAppState("searching");
 
-    const socket = io("http://localhost:4000", {
+    const socket = io("http://34.14.132.4:4000/", {
       transports: ["websocket"],
     });
 

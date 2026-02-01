@@ -1,7 +1,8 @@
 import { createServer } from "http";
 import { Server } from "socket.io";
 
-const PORT = 4000;
+const PORT = Number(process.env.PORT) || 4000;
+
 
 const httpServer = createServer();
 
