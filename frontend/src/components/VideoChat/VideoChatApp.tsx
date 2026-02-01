@@ -232,9 +232,9 @@ const VideoChatApp = () => {
 
       {/* Main Content */}
       <main className="flex-1 p-4 lg:p-6 pt-0 flex flex-col">
-        <div className="flex-1 flex gap-4">
-          {/* Side-by-side Videos */}
-          <div className="flex-1 flex gap-4">
+        <div className="flex-1 flex flex-col lg:flex-row gap-4">
+          {/* Side-by-side Videos (stacked on mobile) */}
+          <div className="flex-1 flex flex-col lg:flex-row gap-4">
             {/* Local Video (You) */}
             <div className="flex-1">
               <VideoPanel
@@ -254,8 +254,8 @@ const VideoChatApp = () => {
             </div>
           </div>
 
-          {/* Slim Chat Sidebar */}
-          <div className="w-72 flex flex-col">
+          {/* Slim Chat Sidebar (full width on mobile, fixed width on desktop) */}
+          <div className="w-full lg:w-72 flex flex-col">
             <ChatPanel
               messages={messages}
               currentUserId={socketRef.current?.id}
