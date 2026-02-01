@@ -88,8 +88,19 @@ const VideoChatApp = () => {
         localVideoRef.current.srcObject = stream;
       }
 
-      const peer = new RTCPeerConnection();
-      peerRef.current = peer;
+      const peer = new RTCPeerConnection({
+
+  iceServers: [
+    { urls: "stun:stun.l.google.com:19302" },
+    {
+      urls: "turn:global.relay.metered.ca:80",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+  ],
+});
+  peerRef.current = peer;
+
 
       stream.getTracks().forEach((track) => {
         peer.addTrack(track, stream);
