@@ -108,10 +108,6 @@ bun install
 bun run src/index.ts
 ```
 
-Backend runs on:
-
-http://localhost:4000
-
 ### Frontend Setup
 ```bash
 git clone https://github.com/prudh-vi/pairup-server.git
@@ -119,45 +115,12 @@ cd pairup-server/frontend
 bun install
 bun run dev
 ```
-Frontend runs on:
-
-http://localhost:3000
-
-
-
-🔌 Environment Configuration
-
-Update frontend socket connection:
-
-io("https://backxpairup.zrxprudhvi.tech")
-
-For local:
-
-io("http://localhost:4000")
-
-📦 Production Process Manager
-
-PM2 is used for:
-
-Auto restart on crash
-Background execution
-Startup on server reboot
-
-🧪 Tested Capabilities
-
-Cross-network peer connections
-Mobile browser compatibility
-Secure WebSocket upgrade (WSS)
-NAT traversal via ICE candidates
-
 
 📈 Future Improvements
 
-TURN Server integration for strict NAT networks
-User filters & interest matching
-Reporting & moderation system
-Scaling signaling using Redis adapter
-
-Load balancer setup
-
-Authentication layer
+-TURN Server integration for strict NAT networks
+-User filters & interest matching
+-Reporting & moderation system
+-Scaling signaling using Redis adapter
+-Load balancer setup
+-Authentication layer
