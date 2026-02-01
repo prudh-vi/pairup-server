@@ -47,17 +47,37 @@ The system is fully deployed on Google Cloud with HTTPS, WebSocket Secure (WSS),
 
 ## 🧠 System Architecture
 
-Client Browser
-|
-HTTPS + WSS
-|
-NGINX
-|
-Socket.IO Signaling Server (Bun)
-|
-WebRTC Peer-to-Peer Connection
-|
-Direct Video & Audio Stream
+┌──────────────────────┐
+│     Client Browser   │
+│  (React + WebRTC UI) │
+└───────────┬──────────┘
+            │
+            │ HTTPS + WSS
+            ▼
+┌──────────────────────┐
+│        NGINX         │
+│  Reverse Proxy + SSL │
+└───────────┬──────────┘
+            │
+            │ HTTP + WebSocket
+            ▼
+┌──────────────────────┐
+│  Socket.IO Server    │
+│      (Bun Runtime)   │
+│  Signaling & Matching│
+└───────────┬──────────┘
+            │
+            │ WebRTC Signaling
+            ▼
+┌──────────────────────┐
+│  Peer-to-Peer Media  │
+│     WebRTC Channel   │
+│ (Video + Audio Data) │
+└───────────┬──────────┘
+            │
+            ▼
+     Direct Media Stream
+
 
 
 Signaling is handled via Socket.IO while actual media streams flow directly peer-to-peer using WebRTC.
@@ -72,10 +92,6 @@ Backend is deployed on Google Cloud VM with:
 - SSL Encryption
 - Reverse Proxy
 - Persistent Background Process
-
-Live Backend URL:
-https://backxpairup.zrxprudhvi.tech
-
 
 Frontend hosted using Vercel.
 
