@@ -1,15 +1,126 @@
-# pairup-server
+# 🔥 PairUp — Real-Time Stranger Video Chat Platform
 
-To install dependencies:
+PairUp is a production-grade real-time video chat application that connects random users instantly using WebRTC peer-to-peer streaming and Socket.IO signaling. It supports live video, audio, chat messaging, and skip-based matchmaking similar to platforms like Omegle and Azar.
+
+The system is fully deployed on Google Cloud with HTTPS, WebSocket Secure (WSS), and NGINX reverse proxy.
+
+---
+
+## 🚀 Features
+
+- 🎥 Real-time video & audio streaming (WebRTC)
+- 💬 Live text chat
+- 🔀 Stranger matchmaking system
+- ⏭ Skip & reconnect functionality
+- 🔐 Secure WebSocket signaling (WSS)
+- 🌐 Production deployment with custom domain & SSL
+- 📱 Responsive UI (Desktop + Mobile)
+- ⚡ Low-latency peer-to-peer communication
+
+---
+
+## 🛠 Tech Stack
+
+### Frontend
+- React
+- TypeScript
+- Tailwind CSS
+- Framer Motion (Animations)
+- Socket.IO Client
+- WebRTC APIs
+
+### Backend
+- Bun Runtime
+- Socket.IO Server
+- Node HTTP Server
+- TypeScript
+
+### Infrastructure & DevOps
+- Google Cloud VM (Compute Engine)
+- NGINX Reverse Proxy
+- Let's Encrypt SSL
+- PM2 Process Manager
+- Git-based CI workflow
+- Custom Domain Routing
+
+---
+
+## 🧠 System Architecture
+
+┌──────────────────────┐
+│     Client Browser   │
+│  (React + WebRTC UI) │
+└───────────┬──────────┘
+            │
+            │ HTTPS + WSS
+            ▼
+┌──────────────────────┐
+│        NGINX         │
+│  Reverse Proxy + SSL │
+└───────────┬──────────┘
+            │
+            │ HTTP + WebSocket
+            ▼
+┌──────────────────────┐
+│  Socket.IO Server    │
+│      (Bun Runtime)   │
+│  Signaling & Matching│
+└───────────┬──────────┘
+            │
+            │ WebRTC Signaling
+            ▼
+┌──────────────────────┐
+│  Peer-to-Peer Media  │
+│     WebRTC Channel   │
+│ (Video + Audio Data) │
+└───────────┬──────────┘
+            │
+            ▼
+     Direct Media Stream
+
+
+
+Signaling is handled via Socket.IO while actual media streams flow directly peer-to-peer using WebRTC.
+
+---
+
+## 🌍 Production Deployment
+
+Backend is deployed on Google Cloud VM with:
+
+- Custom Domain
+- SSL Encryption
+- Reverse Proxy
+- Persistent Background Process
+
+Frontend hosted using Vercel.
+
+---
+
+## ⚙️ Local Development Setup
+
+### Backend Setup
 
 ```bash
+git clone https://github.com/prudh-vi/pairup-server.git
+cd pairup-server
 bun install
+bun run src/index.ts
 ```
 
-To run:
-
+### Frontend Setup
 ```bash
-bun run index.ts
+git clone https://github.com/prudh-vi/pairup-server.git
+cd pairup-server/frontend
+bun install
+bun run dev
 ```
 
-This project was created using `bun init` in bun v1.2.22. [Bun](https://bun.com) is a fast all-in-one JavaScript runtime.
+📈 Future Improvements
+
+-TURN Server integration for strict NAT networks
+-User filters & interest matching
+-Reporting & moderation system
+-Scaling signaling using Redis adapter
+-Load balancer setup
+-Authentication layer
