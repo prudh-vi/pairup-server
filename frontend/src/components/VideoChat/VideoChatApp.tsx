@@ -211,6 +211,93 @@ const VideoChatApp = () => {
     setAppState("connected");
 
     try {
+      // IMPORTANT: Create peer connection FIRST (before async media request)
+      console.log("🔧 Creating peer connection immediately...");
+      const peer = new RTCPeerConnection(rtcConfig);
+      peerRef.current = peer;
+
+      // Set up peer handlers
+      peer.ontrack = (event) => {
+        console.log(`🎥 Received remote ${event.track.kind} track (state: ${event.track.readyState})`);
+        
+        if (remoteVideoRef.current && event.streams[0]) {
+          console.log("📺 Setting remote stream to video element");
+          const remoteStream = event.streams[0];
+          remoteVideoRef.current.srcObject = remoteStream;
+          
+          remoteVideoRef.current.play().catch(err => {
+            console.error("Error auto-playing:", err);
+            remoteVideoRef.current!.onclick = () => {
+              remoteVideoRef.current!.play();
+            };
+          });
+
+          console.log("Remote stream tracks:", remoteStream.getTracks().map(t => ({
+            kind: t.kind,
+            enabled: t.enabled,
+            muted: t.muted,
+            readyState: t.readyState
+          })));
+        }
+      };
+
+      peer.onicecandidate = (event) => {
+        if (event.candidate) {
+          const c = event.candidate;
+          console.log(`📡 ICE candidate: ${c.type} | ${c.protocol} | ${c.address}:${c.port}`);
+          
+          if (c.type === 'relay') {
+            hasRelayCandidate.current = true;
+            console.log("✅ TURN server is working! Got relay candidate");
+          }
+          
+          socket.emit("webrtc:ice", {
+            roomId,
+            candidate: event.candidate,
+          });
+        } else {
+          console.log("🏁 ICE gathering complete");
+          if (!hasRelayCandidate.current) {
+            console.warn("⚠️ WARNING: No TURN candidates found! Connection may fail behind NAT");
+          }
+        }
+      };
+
+      peer.onconnectionstatechange = () => {
+        const state = peer.connectionState;
+        console.log(`🔌 Connection: ${state}`);
+        
+        if (state === "connected") {
+          console.log("✅✅✅ PEER CONNECTED! Video should work now!");
+        } else if (state === "failed") {
+          console.error("❌ Connection FAILED - NAT/Firewall blocking");
+          console.log("🔄 Attempting ICE restart...");
+          peer.restartIce?.();
+        }
+      };
+
+      peer.oniceconnectionstatechange = () => {
+        const state = peer.iceConnectionState;
+        console.log(`🧊 ICE: ${state}`);
+        
+        if (state === "connected" || state === "completed") {
+          console.log("✅ ICE CONNECTED!");
+        } else if (state === "failed") {
+          console.error("❌ ICE FAILED - likely NAT issue");
+        } else if (state === "checking") {
+          console.log("⏳ Checking connectivity...");
+        }
+      };
+
+      peer.onicegatheringstatechange = () => {
+        console.log(`🔍 Gathering: ${peer.iceGatheringState}`);
+      };
+
+      peer.onsignalingstatechange = () => {
+        console.log(`📶 Signaling: ${peer.signalingState}`);
+      };
+
+      // NOW get media (async)
       let stream = localStreamRef.current;
       
       if (!stream) {
@@ -236,14 +323,21 @@ const VideoChatApp = () => {
         }
       }
 
-      const peer = setupPeerConnection(socket, roomId, stream, role);
+      // Add tracks to peer
+      stream.getTracks().forEach(track => {
+        console.log(`➕ Adding ${track.kind} track`);
+        peer.addTrack(track, stream);
+      });
 
-      // Add pending candidates if remote description is set
-      if (peer.remoteDescription && pendingCandidatesRef.current.length > 0) {
-        console.log(`📦 Adding ${pendingCandidatesRef.current.length} queued candidates`);
+      // Process any queued ICE candidates
+      if (pendingCandidatesRef.current.length > 0) {
+        console.log(`📦 Processing ${pendingCandidatesRef.current.length} queued candidates`);
         for (const candidate of pendingCandidatesRef.current) {
           try {
-            await peer.addIceCandidate(candidate);
+            if (peer.remoteDescription) {
+              await peer.addIceCandidate(candidate);
+              console.log("✅ Added queued candidate");
+            }
           } catch (err) {
             console.error("Error adding queued candidate:", err);
           }
@@ -272,7 +366,7 @@ const VideoChatApp = () => {
       alert("Camera/microphone access failed. Please allow permissions and refresh.");
       setAppState("idle");
     }
-  }, [setupPeerConnection]);
+  }, []);
 
   const startChat = useCallback(() => {
     if (socketRef.current?.connected) {
