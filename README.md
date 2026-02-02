@@ -478,8 +478,8 @@ Distributed under the MIT License. See `LICENSE` for more information.
 **Prudhvi**
 
 - GitHub: [@prudh-vi](https://github.com/prudh-vi)
-- LinkedIn: [Your LinkedIn](https://linkedin.com/in/yourprofile)
-- Email: your.email@example.com
+- LinkedIn: [LinkedIn](https://linkedin.com/in/prudhvirajkb)
+- Email: prudhvirajkb3@gmail.com
 
 ---
 
