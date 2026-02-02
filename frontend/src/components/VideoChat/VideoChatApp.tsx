@@ -16,31 +16,16 @@ interface Message {
 
 const rtcConfig: RTCConfiguration = {
   iceServers: [
+    { urls: 'stun:stun.l.google.com:19302' },
     {
-      urls: [
-        'stun:stun.l.google.com:19302',
-        'stun:stun1.l.google.com:19302',
-      ]
+      urls: 'turn:34.14.132.4:3478',
+      username: 'pairup_709ab4a8',
+      credential: '0d5ad55b55368df0dd41857720e27b37'
     },
     {
-      urls: "turn:a.relay.metered.ca:80",
-      username: "87e969d8c4c0b3eb6ec2839b",
-      credential: "I+6JKdamascPTKEZ",
-    },
-    {
-      urls: "turn:a.relay.metered.ca:80?transport=tcp",
-      username: "87e969d8c4c0b3eb6ec2839b",
-      credential: "I+6JKdamascPTKEZ",
-    },
-    {
-      urls: "turn:a.relay.metered.ca:443",
-      username: "87e969d8c4c0b3eb6ec2839b",
-      credential: "I+6JKdamascPTKEZ",
-    },
-    {
-      urls: "turns:a.relay.metered.ca:443?transport=tcp",
-      username: "87e969d8c4c0b3eb6ec2839b",
-      credential: "I+6JKdamascPTKEZ",
+      urls: 'turn:34.14.132.4:3478?transport=tcp',
+      username: 'pairup_709ab4a8',
+      credential: '0d5ad55b55368df0dd41857720e27b37'
     },
   ],
   iceCandidatePoolSize: 10,
