@@ -18,14 +18,14 @@ const rtcConfig: RTCConfiguration = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     {
-      urls: 'turn:34.14.132.4:3478',
-      username: 'pairup_709ab4a8',
-      credential: '0d5ad55b55368df0dd41857720e27b37'
+      urls: 'turn:34.126.207.137:3478',
+      username: 'pairup_333dfc31',
+      credential: '62d0f87b0181fa1e7b70289ed0587d3a'
     },
     {
-      urls: 'turn:34.14.132.4:3478?transport=tcp',
-      username: 'pairup_709ab4a8',
-      credential: '0d5ad55b55368df0dd41857720e27b37'
+      urls: 'turn:34.126.207.137:3478?transport=tcp',
+      username: 'pairup_333dfc31',
+      credential: '62d0f87b0181fa1e7b70289ed0587d3a'
     },
   ],
   iceCandidatePoolSize: 10,
