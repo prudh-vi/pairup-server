@@ -375,25 +375,52 @@ const VideoChatApp = () => {
       </header>
 
       {/* Main stage — expands to fill height when connected */}
-      <section className={`grid gap-5 flex-1 min-h-0 transition-all duration-500 ${appState === 'connected' ? 'grid-cols-1 lg:grid-cols-[1fr_1fr_450px]' : 'grid-cols-1 lg:grid-cols-[1fr_1fr_380px]'}`}>
-        <VideoTile label={profile?.name ?? "You"} status={appState === "idle" ? "Idle" : "Camera ready"}>
-           <video ref={localVideoRef} autoPlay muted playsInline className="h-full w-full object-cover scale-x-[-1]" />
-        </VideoTile>
-        <VideoTile label="Stranger" status={appState === "searching" ? "Searching…" : appState === "connected" ? "Connected" : "Waiting for stranger…"}>
-           <video ref={remoteVideoRef} autoPlay playsInline className="h-full w-full object-cover" />
-        </VideoTile>
-        <ChatPanel 
-           messages={messages} 
-           currentUserId={socketRef.current?.id} 
-           inputValue={message} 
-           onInputChange={setMessage} 
-           onSend={sendMessage} 
-           isConnected={appState === "connected"} 
-        />
+      <section className={`flex-1 min-h-0 relative transition-all duration-500 ${appState === 'connected' ? 'grid gap-5 grid-cols-1 lg:grid-cols-[1fr_1fr_450px]' : 'grid gap-5 grid-cols-1 lg:grid-cols-[1fr_1fr_380px]'}`}>
+        
+        {/* Local Video Tile — becomes PiP on small screens when connected */}
+        <div className={`transition-all duration-500 ease-in-out ${
+          appState === 'connected' 
+            ? 'absolute bottom-4 left-4 w-32 h-44 z-20 md:w-48 md:h-64 lg:relative lg:bottom-0 lg:left-0 lg:w-full lg:h-full lg:z-0' 
+            : 'relative w-full h-full'
+        }`}>
+          <VideoTile 
+            label={profile?.name ?? "You"} 
+            status={appState === "idle" ? "Idle" : "Camera ready"} 
+            isPip={appState === 'connected'}
+          >
+             <video ref={localVideoRef} autoPlay muted playsInline className="h-full w-full object-cover scale-x-[-1]" />
+          </VideoTile>
+        </div>
+
+        {/* Remote Video Tile — becomes Background on small screens when connected */}
+        <div className={`transition-all duration-500 h-full w-full ${
+          appState === 'connected' ? 'absolute inset-0 z-10 lg:relative' : 'relative'
+        }`}>
+          <VideoTile 
+            label="Stranger" 
+            status={appState === "searching" ? "Searching…" : appState === "connected" ? "Connected" : "Waiting for stranger…"}
+          >
+             <video ref={remoteVideoRef} autoPlay playsInline className="h-full w-full object-cover" />
+          </VideoTile>
+        </div>
+
+        {/* Chat Panel — hidden on mobile when connected to focus on video */}
+        <div className={`transition-all duration-500 h-full ${
+          appState === 'connected' ? 'hidden lg:block' : 'block'
+        }`}>
+          <ChatPanel 
+             messages={messages} 
+             currentUserId={socketRef.current?.id} 
+             inputValue={message} 
+             onInputChange={setMessage} 
+             onSend={sendMessage} 
+             isConnected={appState === "connected"} 
+          />
+        </div>
       </section>
 
       {/* Controls */}
-      <footer className={`transition-all duration-500 ${appState === 'connected' ? 'mt-4 mb-2' : 'mt-8 mb-4'}`}>
+      <footer className={`transition-all duration-500 z-30 ${appState === 'connected' ? 'mt-4 mb-2 lg:mt-4' : 'mt-8 mb-4'}`}>
         <ControlBar 
            muted={muted} 
            onToggleMute={() => setMuted(!muted)} 
@@ -403,6 +430,7 @@ const VideoChatApp = () => {
            onSkip={skipChat}
            canSkip={appState === "connected" || appState === "searching"}
         />
+
         <p className="text-center text-xs text-muted-foreground font-medium mt-4 tracking-wide uppercase">
           Press <span className="px-2 py-0.5 bg-card border-2 border-foreground rounded-md font-bold text-foreground">SPACE</span> to skip ·
           <span className="px-2 py-0.5 bg-card border-2 border-foreground rounded-md font-bold text-foreground ml-2">M</span> to mute

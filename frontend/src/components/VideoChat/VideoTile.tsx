@@ -6,15 +6,17 @@ interface VideoTileProps {
   status?: string;
   accent?: boolean;
   children?: ReactNode;
+  isPip?: boolean;
 }
 
-const VideoTile = ({ label, status, accent = false, children }: VideoTileProps) => {
+const VideoTile = ({ label, status, accent = false, children, isPip = false }: VideoTileProps) => {
   return (
     <div
-      className={`relative aspect-[3/4] md:aspect-auto md:h-full w-full rounded-[var(--radius)] border-2 border-foreground overflow-hidden shadow-brutal ${
+      className={`relative rounded-[var(--radius)] border-2 border-foreground overflow-hidden shadow-brutal transition-all duration-500 ${
         accent ? "bg-lime" : "bg-card"
-      }`}
+      } ${isPip ? "aspect-[3/4]" : "aspect-[3/4] md:aspect-auto md:h-full w-full"}`}
     >
+
       {/* Decorative grain / pattern */}
       <div
         className="absolute inset-0 opacity-[0.06]"
@@ -36,12 +38,13 @@ const VideoTile = ({ label, status, accent = false, children }: VideoTileProps) 
       {children}
 
       {/* Label chip */}
-      <div className="absolute bottom-4 left-4">
+      <div className={`absolute bottom-4 left-4 transition-all ${isPip ? 'scale-75 origin-bottom-left' : ''}`}>
         <span className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-foreground text-background text-xs font-bold tracking-wider uppercase border-2 border-foreground">
           <span className="h-1.5 w-1.5 rounded-full bg-lime animate-pulse" />
           {label}
         </span>
       </div>
+
     </div>
   );
 };
