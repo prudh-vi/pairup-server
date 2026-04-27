@@ -7,6 +7,7 @@ interface VideoPanelProps {
   isLocal?: boolean;
   isActive?: boolean;
   label?: string;
+  className?: string;
 }
 
 const VideoPanel = ({
@@ -14,9 +15,10 @@ const VideoPanel = ({
   isLocal = false,
   isActive = false,
   label,
+  className,
 }: VideoPanelProps) => {
   return (
-    <View className="flex-1 bg-gray-100 rounded-2xl overflow-hidden relative">
+    <View className={`bg-gray-100 overflow-hidden relative ${className || 'flex-1 rounded-2xl'}`}>
       {/* Video element */}
       {streamURL && isActive ? (
         <RTCView

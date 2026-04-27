@@ -1,5 +1,5 @@
 import React, { useRef, useState, useCallback, useEffect } from "react";
-import { View, Text, Alert, Platform, KeyboardAvoidingView } from "react-native";
+import { View, Text, Alert, Platform, KeyboardAvoidingView, TouchableOpacity } from "react-native";
 import { io, Socket } from "socket.io-client";
 import {
   RTCPeerConnection,
@@ -8,7 +8,7 @@ import {
   mediaDevices,
   MediaStream,
 } from "react-native-webrtc";
-import { Flame, PhoneOff, SkipForward } from "lucide-react-native";
+import { Flame, PhoneOff, SkipForward, Mic, MicOff, Video as VideoIcon, VideoOff, Volume2, VolumeX, MessageCircle, MoreHorizontal, Timer, X } from "lucide-react-native";
 
 import VideoPanel from "./VideoPanel";
 import ChatPanel from "./ChatPanel";
@@ -52,6 +52,29 @@ const VideoChatApp = () => {
   const [roomId, setRoomId] = useState("");
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
+
+  const [isMuted, setIsMuted] = useState(false);
+  const [isVideoOff, setIsVideoOff] = useState(false);
+  const [isChatOpen, setIsChatOpen] = useState(false);
+  const [isSpeakerOff, setIsSpeakerOff] = useState(false);
+
+  const toggleMic = useCallback(() => {
+    if (localStream) {
+      localStream.getAudioTracks().forEach(track => {
+        track.enabled = !track.enabled;
+      });
+      setIsMuted(!isMuted);
+    }
+  }, [localStream, isMuted]);
+
+  const toggleVideo = useCallback(() => {
+    if (localStream) {
+      localStream.getVideoTracks().forEach(track => {
+        track.enabled = !track.enabled;
+      });
+      setIsVideoOff(!isVideoOff);
+    }
+  }, [localStream, isVideoOff]);
 
   const cleanupConnection = useCallback(() => {
     console.log("🧹 Cleaning up connection...");
@@ -326,74 +349,128 @@ const VideoChatApp = () => {
 
   return (
     <KeyboardAvoidingView 
-      className="flex-1 bg-white" 
+      className="flex-1 bg-black" 
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
-      {/* Header */}
-      <View className="flex-row items-center justify-between p-4 bg-white border-b border-gray-100">
-        <View className="flex-row items-center gap-2">
-          <View className="h-10 w-10 rounded-xl bg-orange-500 items-center justify-center">
-            <Flame size={20} color="#fff" />
-          </View>
-          <Text className="text-xl font-bold text-orange-500">PairUp</Text>
-        </View>
-        <StatusIndicator {...getStatusConfig()} />
-      </View>
+      <View className="flex-1 relative">
+        {/* Full Screen Remote Video */}
+        <VideoPanel
+          streamURL={remoteStream?.toURL()}
+          isActive={appState === "connected"}
+          label={appState !== "connected" ? "Searching..." : undefined}
+          className="absolute inset-0"
+        />
 
-      <View className="flex-1 p-4 flex-col gap-4">
-        {/* Videos Row */}
-        <View className="h-48 flex-row gap-4">
-          <View className="flex-1">
-            <VideoPanel 
-              streamURL={localStream?.toURL()} 
-              isActive={localStream !== null} 
-              isLocal 
-              label="You" 
-            />
-          </View>
-          <View className="flex-1">
-            <VideoPanel
-              streamURL={remoteStream?.toURL()}
-              isActive={appState === "connected"}
-              label="Stranger"
-            />
-          </View>
-        </View>
-
-        {/* Chat Area */}
-        <View className="flex-1 bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden mb-20 lg:mb-0">
-          <ChatPanel
-            messages={messages}
-            currentUserId={socketRef.current?.id}
-            inputValue={message}
-            onInputChange={setMessage}
-            onSend={sendMessage}
-            isConnected={appState === "connected"}
+        {/* PIP Local Video */}
+        <View className="absolute bottom-32 right-4 w-28 h-40 shadow-xl border border-white/20 rounded-2xl overflow-hidden z-20">
+          <VideoPanel
+            streamURL={localStream?.toURL()}
+            isActive={localStream !== null}
+            isLocal
+            className="flex-1"
           />
         </View>
-      </View>
 
-      {/* Action Buttons Overlay */}
-      {(appState === "searching" || appState === "connected") && (
-        <View className="absolute bottom-6 left-0 right-0 px-4">
-          <View className="bg-white/90 rounded-3xl p-3 flex-row justify-center gap-4 shadow-lg border border-gray-100 mx-auto w-full max-w-sm">
-            <ActionButton 
-              icon={PhoneOff} 
-              label="End Call" 
-              variant="danger" 
-              onClick={endChat} 
-            />
-            <ActionButton
-              icon={SkipForward}
-              label="Next"
-              variant="primary"
-              size="lg"
-              onClick={skipChat}
-              disabled={appState !== "connected"}
-            />
+        {/* Top Floating Bar */}
+        {(appState === "searching" || appState === "connected") && (
+          <View className="absolute top-12 left-4 right-4 z-20 items-center">
+            <View className="bg-black/80 rounded-full flex-row items-center px-1 py-1 w-[90%] max-w-[320px] shadow-lg border border-neutral-800">
+              <View className="h-10 w-10 bg-green-500 rounded-full items-center justify-center">
+                <Timer size={18} color="#000" />
+              </View>
+              <View className="flex-1 items-center px-1">
+                <Text className="text-white font-bold text-[14px]">Extend on 5 min</Text>
+                <Text className="text-gray-400 text-[11px] mt-0.5">$10 for each 6 min in a call</Text>
+              </View>
+              <View className="h-10 w-10 items-center justify-center">
+                <MoreHorizontal size={20} color="#666" />
+              </View>
+            </View>
           </View>
-        </View>
-      )}
+        )}
+
+        {/* Bottom Bar Controls */}
+        {(appState === "searching" || appState === "connected") && (
+          <View className="absolute bottom-10 left-0 right-0 px-4 flex-row justify-center items-center gap-3 z-20 max-w-sm mx-auto w-full">
+            <TouchableOpacity 
+              onPress={toggleMic}
+              className={`h-12 w-12 rounded-full items-center justify-center ${isMuted ? 'bg-white' : 'bg-white/20'}`}
+            >
+              {isMuted ? <MicOff size={22} color="#000" /> : <Mic size={22} color="#fff" />}
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              onPress={toggleVideo}
+              className={`h-12 w-12 rounded-full items-center justify-center ${isVideoOff ? 'bg-white' : 'bg-white/20'}`}
+            >
+              {isVideoOff ? <VideoOff size={22} color="#000" /> : <VideoIcon size={22} color="#fff" />}
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              onPress={() => setIsSpeakerOff(!isSpeakerOff)}
+              className={`h-12 w-12 rounded-full items-center justify-center ${isSpeakerOff ? 'bg-white' : 'bg-white/20'}`}
+            >
+              {isSpeakerOff ? <VolumeX size={22} color="#000" /> : <Volume2 size={22} color="#fff" />}
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              onPress={() => setIsChatOpen(true)}
+              className="h-12 w-12 rounded-full bg-white/20 items-center justify-center relative"
+            >
+              <MessageCircle size={22} color="#fff" />
+              {messages.length > 0 && (
+                <View className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 rounded-full items-center justify-center border border-black">
+                  <Text className="text-white text-[10px] font-bold">{messages.length > 9 ? '9+' : messages.length}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              onPress={skipChat}
+              disabled={appState !== "connected"}
+              className={`h-12 w-12 rounded-full items-center justify-center ${appState !== "connected" ? 'bg-white/10' : 'bg-blue-500'}`}
+            >
+              <SkipForward size={22} color={appState !== "connected" ? "#666" : "#fff"} />
+            </TouchableOpacity>
+
+            <TouchableOpacity 
+              onPress={endChat}
+              className="h-12 w-12 rounded-full bg-red-500 items-center justify-center ml-2"
+            >
+              <PhoneOff size={22} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        )}
+
+        {/* Chat Overlay */}
+        {isChatOpen && (
+          <View className="absolute inset-0 z-30 justify-end">
+            <TouchableOpacity 
+              className="absolute inset-0 bg-black/60" 
+              activeOpacity={1} 
+              onPress={() => setIsChatOpen(false)} 
+            />
+            <View className="h-[75%] bg-white rounded-t-3xl overflow-hidden shadow-2xl relative">
+              <View className="absolute top-3 right-3 z-50">
+                <TouchableOpacity 
+                  onPress={() => setIsChatOpen(false)}
+                  className="bg-gray-100 rounded-full p-2"
+                >
+                  <X size={20} color="#666" />
+                </TouchableOpacity>
+              </View>
+              <ChatPanel
+                messages={messages}
+                currentUserId={socketRef.current?.id}
+                inputValue={message}
+                onInputChange={setMessage}
+                onSend={sendMessage}
+                isConnected={appState === "connected"}
+              />
+            </View>
+          </View>
+        )}
+      </View>
     </KeyboardAvoidingView>
   );
 };

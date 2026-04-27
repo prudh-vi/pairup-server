@@ -4,24 +4,24 @@ import { Server } from "socket.io";
 const PORT = Number(process.env.PORT) || 4000;
 
 const httpServer = createServer((req, res) => {
-  res.writeHead(200, { "Content-Type": "text/plain" });
-  res.end("PairUp Backend Running");
+    res.writeHead(200, { "Content-Type": "text/plain" });
+    res.end("PairUp Backend Running");
 });
 
 
 
 const io = new Server(httpServer, {
-  cors: {
-    origin: "https://pairup-frontend.vercel.app",
-  },
-  transports: ["websocket"],
+    cors: {
+        origin: "*",
+    },
+    transports: ["websocket"],
 });
 const waitingUsers: string[] = [];
 
-io.on("connection",(socket) => {
+io.on("connection", (socket) => {
     console.log("Client Connected", socket.id);
     socket.emit("server:welcome", {
-        message:"connected to pairup real time",
+        message: "connected to pairup real time",
 
     })
 
@@ -31,9 +31,9 @@ io.on("connection",(socket) => {
 
     socket.on("client:start_chat", () => {
         console.log("user wants to chat", socket.id);
-        if(waitingUsers.length > 0){
+        if (waitingUsers.length > 0) {
             let partnerID = waitingUsers.shift();
-            if(!partnerID || partnerID === socket.id){
+            if (!partnerID || partnerID === socket.id) {
 
                 waitingUsers.push(socket.id);
                 return;
@@ -49,7 +49,7 @@ io.on("connection",(socket) => {
 
 
 
-            console.log("matched:", socket.id,"with", partnerID);
+            console.log("matched:", socket.id, "with", partnerID);
 
 
         } else {
@@ -59,8 +59,8 @@ io.on("connection",(socket) => {
     })
 
 
-    socket.on("client:send_message", ({ roomId, message}) => {
-        console.log("Message:",message, "from",socket.id);
+    socket.on("client:send_message", ({ roomId, message }) => {
+        console.log("Message:", message, "from", socket.id);
 
 
         io.to(roomId).emit("server:new_message", {
@@ -69,16 +69,16 @@ io.on("connection",(socket) => {
         })
     })
 
-    socket.on("client:skip", ( {roomId }) => {
+    socket.on("client:skip", ({ roomId }) => {
         console.log("user skipped", socket.id);
         socket.leave(roomId);
-        
+
         socket.to(roomId).emit("server:partner_left");
 
         const index = waitingUsers.indexOf(socket.id);
 
-        if(index !== -1){
-            waitingUsers.splice(index,1);
+        if (index !== -1) {
+            waitingUsers.splice(index, 1);
         }
 
         waitingUsers.push(socket.id);
@@ -87,11 +87,11 @@ io.on("connection",(socket) => {
 
 
     socket.on("webrtc:offer", ({ roomId, offer }) => {
-        socket.to(roomId).emit("webrtc:offer",{ offer, roomId});
+        socket.to(roomId).emit("webrtc:offer", { offer, roomId });
     })
 
     socket.on("webrtc:answer", ({ roomId, answer }) => {
-        socket.to(roomId).emit("webrtc:answer",{ answer });
+        socket.to(roomId).emit("webrtc:answer", { answer });
     })
 
     socket.on("webrtc:ice", ({ roomId, candidate }) => {
@@ -108,7 +108,7 @@ io.on("connection",(socket) => {
 
 
 httpServer.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
 
 
