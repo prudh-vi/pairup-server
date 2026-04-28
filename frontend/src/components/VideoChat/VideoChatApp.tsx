@@ -23,14 +23,22 @@ const rtcConfig: RTCConfiguration = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     {
-      urls: 'turn:20.198.25.231:3478',
-      username: 'pairup',
-      credential: 'pairup123',
+      urls: "stun:openrelay.metered.ca:80",
     },
     {
-      urls: 'turn:20.198.25.231:3478?transport=tcp',
-      username: 'pairup',
-      credential: 'pairup123',
+      urls: "turn:openrelay.metered.ca:80",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+    {
+      urls: "turn:openrelay.metered.ca:443",
+      username: "openrelayproject",
+      credential: "openrelayproject",
+    },
+    {
+      urls: "turn:openrelay.metered.ca:443?transport=tcp",
+      username: "openrelayproject",
+      credential: "openrelayproject",
     },
   ],
   iceCandidatePoolSize: 10,
