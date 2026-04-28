@@ -117,6 +117,8 @@ const VideoChatApp = () => {
 
   const createPeerConnection = useCallback((socket: Socket, currentRoomId: string) => {
     console.log("🔌 Creating peer connection for room:", currentRoomId);
+    console.log("🚨 RTC CONFIG:", JSON.stringify(rtcConfig, null, 2));
+
     const peer = new RTCPeerConnection(rtcConfig);
     peerRef.current = peer;
 
