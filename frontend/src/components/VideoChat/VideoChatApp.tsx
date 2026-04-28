@@ -22,14 +22,17 @@ interface Message {
 const rtcConfig: RTCConfiguration = {
   iceServers: [
     {
-      urls: "stun:stun.l.google.com:19302",
+      urls: ["stun:stun.l.google.com:19302"]
     },
     {
-      urls: "turn:backxpairup.zrxprudhvi.tech:3478",
+      urls: [
+        "turn:backxpairup.zrxprudhvi.tech:3478?transport=udp",
+        "turn:backxpairup.zrxprudhvi.tech:3478?transport=tcp"
+      ],
       username: "pairup",
-      credential: "securepassword123",
-    },
-  ],
+      credential: "securepassword123"
+    }
+  ]
 };
 const VideoChatApp = () => {
   // Logic Refs
