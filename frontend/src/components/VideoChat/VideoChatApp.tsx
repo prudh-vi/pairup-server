@@ -120,10 +120,12 @@ const VideoChatApp = () => {
   }, []);
 
   const createPeerConnection = useCallback((socket: Socket, currentRoomId: string) => {
+    console.log("🔌 Creating peer connection for room:", currentRoomId);
     const peer = new RTCPeerConnection(rtcConfig);
     peerRef.current = peer;
 
     peer.ontrack = (event) => {
+      console.log("📹 Remote track received:", event.track.kind);
       if (remoteVideoRef.current && event.streams[0]) {
         remoteVideoRef.current.srcObject = event.streams[0];
         remoteVideoRef.current.play().catch(console.error);
@@ -132,19 +134,36 @@ const VideoChatApp = () => {
 
     peer.onicecandidate = (event) => {
       if (event.candidate) {
-        if (event.candidate.type === 'relay') hasRelayCandidate.current = true;
+        console.log("🧊 ICE candidate:", event.candidate.type, event.candidate.candidate?.substring(0, 50));
+        if (event.candidate.type === 'relay') {
+          console.log("✅ RELAY candidate found!");
+          hasRelayCandidate.current = true;
+        }
         socket.emit("webrtc:ice", { roomId: currentRoomId, candidate: event.candidate });
       }
     };
 
     peer.onconnectionstatechange = () => {
-      if (peer.connectionState === "failed") peer.restartIce?.();
+      console.log("🔗 Connection state:", peer.connectionState);
+      if (peer.connectionState === "failed") {
+        console.log("❌ Connection failed, restarting ICE...");
+        peer.restartIce?.();
+      }
+    };
+
+    peer.oniceconnectionstatechange = () => {
+      console.log("🧊 ICE connection state:", peer.iceConnectionState);
+    };
+
+    peer.onsignalingstatechange = () => {
+      console.log("📡 Signaling state:", peer.signalingState);
     };
 
     return peer;
   }, []);
 
   const handleMatched = useCallback(async (socket: Socket, { roomId, role }: { roomId: string; role: string }) => {
+    console.log("✅ MATCHED:", roomId, "role:", role);
     setRoomId(roomId);
     setAppState("connected");
     const peer = createPeerConnection(socket, roomId);
@@ -152,10 +171,12 @@ const VideoChatApp = () => {
     try {
       let stream = localStreamRef.current;
       if (!stream) {
+        console.log("🎥 Getting user media...");
         stream = await navigator.mediaDevices.getUserMedia({
           video: { width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
         });
+        console.log("✅ Local stream obtained");
         localStreamRef.current = stream;
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
@@ -163,9 +184,11 @@ const VideoChatApp = () => {
         }
       }
 
+      console.log("➕ Adding tracks to peer...");
       stream.getTracks().forEach(track => peer.addTrack(track, stream!));
 
       if (pendingCandidatesRef.current.length > 0) {
+        console.log("⏳ Adding pending ICE candidates:", pendingCandidatesRef.current.length);
         for (const candidate of pendingCandidatesRef.current) {
           if (peer.remoteDescription) await peer.addIceCandidate(candidate);
         }
@@ -173,23 +196,29 @@ const VideoChatApp = () => {
       }
 
       if (role === "caller") {
+        console.log("📞 Creating offer (caller)...");
         const offer = await peer.createOffer({ offerToReceiveVideo: true, offerToReceiveAudio: true });
         await peer.setLocalDescription(offer);
+        console.log("📤 Sending offer...");
         socket.emit("webrtc:offer", { roomId, offer });
+      } else {
+        console.log("⏳ Waiting for offer (callee)...");
       }
     } catch (error) {
-      console.error(error);
+      console.error("❌ Error in handleMatched:", error);
       setAppState("idle");
     }
   }, [createPeerConnection]);
 
   const startChat = useCallback(() => {
     if (socketRef.current?.connected) {
+      console.log("🔄 Reusing existing socket connection");
       socketRef.current.emit("client:start_chat");
       setAppState("searching");
       return;
     }
 
+    console.log("🌐 Connecting to signaling server...");
     setAppState("searching");
     const socket = io("https://backxpairup.zrxprudhvi.tech", {
       transports: ["websocket"],
@@ -199,58 +228,91 @@ const VideoChatApp = () => {
 
     socketRef.current = socket;
 
-    socket.on("connect", () => socket.emit("client:start_chat"));
-    socket.on("server:matched", (data) => handleMatched(socket, data));
+    socket.on("connect", () => {
+      console.log("✅ Socket connected, requesting chat");
+      socket.emit("client:start_chat");
+    });
+
+    socket.on("server:matched", (data) => {
+      console.log("📢 Server:matched event received");
+      handleMatched(socket, data);
+    });
 
     socket.on("webrtc:offer", async ({ offer, roomId }) => {
+      console.log("📥 Received offer");
       const peer = peerRef.current;
-      if (!peer) return;
+      if (!peer) {
+        console.log("❌ No peer connection!");
+        return;
+      }
       try {
+        console.log("⚙️ Setting remote description (offer)...");
         await peer.setRemoteDescription(new RTCSessionDescription(offer));
         if (pendingCandidatesRef.current.length > 0) {
+          console.log("⏳ Adding pending ICE candidates:", pendingCandidatesRef.current.length);
           for (const candidate of pendingCandidatesRef.current) {
             await peer.addIceCandidate(candidate);
           }
           pendingCandidatesRef.current = [];
         }
+        console.log("✅ Creating answer...");
         const answer = await peer.createAnswer();
         await peer.setLocalDescription(answer);
+        console.log("📤 Sending answer...");
         socket.emit("webrtc:answer", { roomId, answer });
-      } catch (error) { console.error(error); }
+      } catch (error) {
+        console.error("❌ Error handling offer:", error);
+      }
     });
 
     socket.on("webrtc:answer", async ({ answer }) => {
+      console.log("📥 Received answer");
       const peer = peerRef.current;
-      if (!peer || peer.signalingState !== "have-local-offer") return;
+      if (!peer || peer.signalingState !== "have-local-offer") {
+        console.log("❌ Invalid peer state for answer");
+        return;
+      }
       try {
+        console.log("⚙️ Setting remote description (answer)...");
         await peer.setRemoteDescription(new RTCSessionDescription(answer));
         if (pendingCandidatesRef.current.length > 0) {
+          console.log("⏳ Adding pending ICE candidates:", pendingCandidatesRef.current.length);
           for (const candidate of pendingCandidatesRef.current) {
             await peer.addIceCandidate(candidate);
           }
           pendingCandidatesRef.current = [];
         }
-      } catch (error) { console.error(error); }
+      } catch (error) {
+        console.error("❌ Error handling answer:", error);
+      }
     });
 
     socket.on("webrtc:ice", async ({ candidate }) => {
       const peer = peerRef.current;
       if (!peer || !peer.remoteDescription) {
+        console.log("⏳ Buffering ICE candidate (no remote description yet)");
         pendingCandidatesRef.current.push(new RTCIceCandidate(candidate));
         return;
       }
-      try { await peer.addIceCandidate(new RTCIceCandidate(candidate)); } catch (error) { console.error(error); }
+      try {
+        console.log("➕ Adding ICE candidate");
+        await peer.addIceCandidate(new RTCIceCandidate(candidate));
+      } catch (error) {
+        console.error("❌ Error adding ICE candidate:", error);
+      }
     });
 
     socket.on("server:new_message", (data) => setMessages((prev) => [...prev, data]));
 
     socket.on("server:partner_left", () => {
+      console.log("👤 Partner left");
       cleanupConnection();
       setAppState("searching");
       socket.emit("client:start_chat");
     });
 
-    socket.on("disconnect", () => console.log("❌ Disconnected"));
+    socket.on("disconnect", () => console.log("❌ Socket disconnected"));
+    socket.on("connect_error", (error) => console.log("❌ Connection error:", error));
   }, [handleMatched, cleanupConnection]);
 
   const sendMessage = useCallback(() => {
@@ -261,6 +323,7 @@ const VideoChatApp = () => {
 
   const skipChat = useCallback(() => {
     if (!socketRef.current || !roomId) return;
+    console.log("⏭️ Skipping chat");
     cleanupConnection();
     socketRef.current.emit("client:skip", { roomId });
     setAppState("searching");
@@ -269,6 +332,7 @@ const VideoChatApp = () => {
 
   const endChat = useCallback(() => {
     if (!socketRef.current) return;
+    console.log("📞 Ending chat");
     cleanupConnection();
     stopLocalStream();
     if (roomId) socketRef.current.emit("client:skip", { roomId });
