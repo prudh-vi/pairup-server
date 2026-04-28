@@ -23,14 +23,9 @@ const rtcConfig: RTCConfiguration = {
   iceServers: [
     { urls: 'stun:stun.l.google.com:19302' },
     {
-      urls: 'turn:34.126.207.137:3478',
-      username: 'pairup_333dfc31',
-      credential: '62d0f87b0181fa1e7b70289ed0587d3a'
-    },
-    {
-      urls: 'turn:34.126.207.137:3478?transport=tcp',
-      username: 'pairup_333dfc31',
-      credential: '62d0f87b0181fa1e7b70289ed0587d3a'
+      urls: 'turn:20.198.25.231:3478',
+      username: 'pairup',
+      credential: 'securepassword123'
     },
   ],
   iceCandidatePoolSize: 10,
@@ -53,7 +48,7 @@ const VideoChatApp = () => {
   const [roomId, setRoomId] = useState("");
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
-  
+
   // UI Profile State
   const [profile, setProfile] = useState<Profile | null>(null);
   const [hydrated, setHydrated] = useState(false);
@@ -201,7 +196,7 @@ const VideoChatApp = () => {
 
     socket.on("connect", () => socket.emit("client:start_chat"));
     socket.on("server:matched", (data) => handleMatched(socket, data));
-    
+
     socket.on("webrtc:offer", async ({ offer, roomId }) => {
       const peer = peerRef.current;
       if (!peer) return;
@@ -243,7 +238,7 @@ const VideoChatApp = () => {
     });
 
     socket.on("server:new_message", (data) => setMessages((prev) => [...prev, data]));
-    
+
     socket.on("server:partner_left", () => {
       cleanupConnection();
       setAppState("searching");
@@ -301,7 +296,7 @@ const VideoChatApp = () => {
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.target instanceof HTMLInputElement || e.target instanceof HTMLTextAreaElement) return;
-      
+
       if (e.code === "Space") {
         e.preventDefault();
         skipChat();
@@ -360,7 +355,7 @@ const VideoChatApp = () => {
                 </p>
               </div>
             </div>
-            
+
             {appState !== 'connected' && (
               <div className="brutal-card-sm bg-card px-4 py-3 flex items-center gap-3 min-w-[220px]">
                 <Users className="h-5 w-5" strokeWidth={2.5} />
@@ -376,59 +371,56 @@ const VideoChatApp = () => {
 
       {/* Main stage — expands to fill height when connected */}
       <section className={`flex-1 min-h-0 relative transition-all duration-500 ${appState === 'connected' ? 'grid gap-5 grid-cols-1 lg:grid-cols-[1fr_1fr_450px]' : 'grid gap-5 grid-cols-1 lg:grid-cols-[1fr_1fr_380px]'}`}>
-        
+
         {/* Local Video Tile — becomes PiP on small screens when connected */}
-        <div className={`transition-all duration-500 ease-in-out ${
-          appState === 'connected' 
-            ? 'absolute bottom-4 left-4 w-32 h-44 z-20 md:w-48 md:h-64 lg:relative lg:bottom-0 lg:left-0 lg:w-full lg:h-full lg:z-0' 
-            : 'relative w-full h-full'
-        }`}>
-          <VideoTile 
-            label={profile?.name ?? "You"} 
-            status={appState === "idle" ? "Idle" : "Camera ready"} 
+        <div className={`transition-all duration-500 ease-in-out ${appState === 'connected'
+          ? 'absolute bottom-4 left-4 w-32 h-44 z-20 md:w-48 md:h-64 lg:relative lg:bottom-0 lg:left-0 lg:w-full lg:h-full lg:z-0'
+          : 'relative w-full h-full'
+          }`}>
+          <VideoTile
+            label={profile?.name ?? "You"}
+            status={appState === "idle" ? "Idle" : "Camera ready"}
             isPip={appState === 'connected'}
           >
-             <video ref={localVideoRef} autoPlay muted playsInline className="h-full w-full object-cover scale-x-[-1]" />
+            <video ref={localVideoRef} autoPlay muted playsInline className="h-full w-full object-cover scale-x-[-1]" />
           </VideoTile>
         </div>
 
         {/* Remote Video Tile — becomes Background on small screens when connected */}
-        <div className={`transition-all duration-500 h-full w-full ${
-          appState === 'connected' ? 'absolute inset-0 z-10 lg:relative' : 'relative'
-        }`}>
-          <VideoTile 
-            label="Stranger" 
+        <div className={`transition-all duration-500 h-full w-full ${appState === 'connected' ? 'absolute inset-0 z-10 lg:relative' : 'relative'
+          }`}>
+          <VideoTile
+            label="Stranger"
             status={appState === "searching" ? "Searching…" : appState === "connected" ? "Connected" : "Waiting for stranger…"}
           >
-             <video ref={remoteVideoRef} autoPlay playsInline className="h-full w-full object-cover" />
+            <video ref={remoteVideoRef} autoPlay playsInline className="h-full w-full object-cover" />
           </VideoTile>
         </div>
 
         {/* Chat Panel — hidden on mobile when connected to focus on video */}
-        <div className={`transition-all duration-500 h-full ${
-          appState === 'connected' ? 'hidden lg:block' : 'block'
-        }`}>
-          <ChatPanel 
-             messages={messages} 
-             currentUserId={socketRef.current?.id} 
-             inputValue={message} 
-             onInputChange={setMessage} 
-             onSend={sendMessage} 
-             isConnected={appState === "connected"} 
+        <div className={`transition-all duration-500 h-full ${appState === 'connected' ? 'hidden lg:block' : 'block'
+          }`}>
+          <ChatPanel
+            messages={messages}
+            currentUserId={socketRef.current?.id}
+            inputValue={message}
+            onInputChange={setMessage}
+            onSend={sendMessage}
+            isConnected={appState === "connected"}
           />
         </div>
       </section>
 
       {/* Controls */}
       <footer className={`transition-all duration-500 z-30 ${appState === 'connected' ? 'mt-4 mb-2 lg:mt-4' : 'mt-8 mb-4'}`}>
-        <ControlBar 
-           muted={muted} 
-           onToggleMute={() => setMuted(!muted)} 
-           camOff={camOff} 
-           onToggleCam={() => setCamOff(!camOff)}
-           onEndCall={endChat}
-           onSkip={skipChat}
-           canSkip={appState === "connected" || appState === "searching"}
+        <ControlBar
+          muted={muted}
+          onToggleMute={() => setMuted(!muted)}
+          camOff={camOff}
+          onToggleCam={() => setCamOff(!camOff)}
+          onEndCall={endChat}
+          onSkip={skipChat}
+          canSkip={appState === "connected" || appState === "searching"}
         />
 
         <p className="text-center text-xs text-muted-foreground font-medium mt-4 tracking-wide uppercase">
