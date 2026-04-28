@@ -25,12 +25,17 @@ const rtcConfig: RTCConfiguration = {
     {
       urls: 'turn:20.198.25.231:3478',
       username: 'pairup',
-      credential: 'securepassword123'
+      credential: 'yourpasswordhere',
+      credentialType: 'password'
+    },
+    {
+      urls: 'turn:20.198.25.231:3478?transport=tcp',
+      username: 'pairup',
+      credential: 'yourpasswordhere',
+      credentialType: 'password'
     },
   ],
   iceCandidatePoolSize: 10,
-  bundlePolicy: 'max-bundle',
-  rtcpMuxPolicy: 'require',
 };
 
 const VideoChatApp = () => {
