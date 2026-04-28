@@ -128,7 +128,6 @@ const VideoChatApp = () => {
       console.log("📹 Remote track received:", event.track.kind);
       if (remoteVideoRef.current && event.streams[0]) {
         remoteVideoRef.current.srcObject = event.streams[0];
-        remoteVideoRef.current.play().catch(console.error);
       }
     };
 
