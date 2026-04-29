@@ -6,7 +6,7 @@
 
 A production-grade real-time stranger video chat platform built with WebRTC and Socket.IO
 
-[Live Demo](https://pairup-frontend.vercel.app) • [Report Bug](https://github.com/prudh-vi/pairup-server/issues) • [Request Feature](https://github.com/prudh-vi/pairup-server/issues)
+[Live Demo](https://pairup.zrxprudhvi.tech/) • [Report Bug](https://github.com/prudh-vi/pairup-server/issues) • [Request Feature](https://github.com/prudh-vi/pairup-server/issues)
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](http://makeapullrequest.com)
