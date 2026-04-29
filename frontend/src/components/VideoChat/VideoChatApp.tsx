@@ -618,7 +618,7 @@ const VideoChatApp = () => {
               hasUnread={hasUnread}
             />
 
-            <p className="text-center text-xs text-muted-foreground font-medium mt-4 tracking-wide uppercase">
+            <p className="hidden md:block text-center text-xs text-muted-foreground font-medium mt-4 tracking-wide uppercase">
               Press <span className="px-2 py-0.5 bg-card border-2 border-foreground rounded-md font-bold text-foreground">SPACE</span> to skip ·
               <span className="px-2 py-0.5 bg-card border-2 border-foreground rounded-md font-bold text-foreground ml-2">M</span> to mute
             </p>
