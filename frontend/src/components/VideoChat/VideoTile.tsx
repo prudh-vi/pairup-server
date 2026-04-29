@@ -7,12 +7,13 @@ interface VideoTileProps {
   accent?: boolean;
   children?: ReactNode;
   isPip?: boolean;
+  showPlaceholder?: boolean;
 }
 
-const VideoTile = ({ label, status, accent = false, children, isPip = false }: VideoTileProps) => {
+const VideoTile = ({ label, status, accent = false, children, isPip = false, showPlaceholder = false }: VideoTileProps) => {
   return (
     <div
-      className={`relative rounded-[var(--radius)] border-2 border-foreground overflow-hidden shadow-brutal transition-all duration-500 ${accent ? "bg-lime" : "bg-card"
+      className={`relative rounded-[var(--radius)] border-2 border-foreground overflow-hidden shadow-brutal transition-all duration-500 min-h-0 ${accent ? "bg-lime" : "bg-card"
         } ${isPip ? "aspect-[3/4]" : "aspect-[3/4] md:aspect-auto md:h-full w-full"}`}
     >
 
@@ -26,8 +27,8 @@ const VideoTile = ({ label, status, accent = false, children, isPip = false }: V
         }}
       />
 
-      {/* Center placeholder — only show if no children */}
-      {!children && (
+      {/* Center placeholder */}
+      {showPlaceholder && (
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-3 text-foreground/70">
           <div className="h-20 w-20 rounded-full border-2 border-foreground/40 border-dashed flex items-center justify-center">
             <User className="h-10 w-10" strokeWidth={2.5} />

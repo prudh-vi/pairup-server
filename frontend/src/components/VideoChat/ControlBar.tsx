@@ -1,4 +1,4 @@
-import { Mic, MicOff, PhoneOff, SkipForward, Video, VideoOff } from "lucide-react";
+import { Mic, MicOff, PhoneOff, SkipForward, Video, VideoOff, MessageCircle } from "lucide-react";
 
 interface ControlBarProps {
   muted: boolean;
@@ -8,6 +8,8 @@ interface ControlBarProps {
   onEndCall: () => void;
   onSkip: () => void;
   canSkip: boolean;
+  onToggleChat?: () => void;
+  hasUnread?: boolean;
 }
 
 const ControlBar = ({
@@ -18,6 +20,8 @@ const ControlBar = ({
   onEndCall,
   onSkip,
   canSkip,
+  onToggleChat,
+  hasUnread,
 }: ControlBarProps) => {
   const baseBtn =
     "h-14 w-14 grid place-items-center rounded-2xl border-2 border-foreground shadow-brutal-sm transition-all hover:translate-x-[1px] hover:translate-y-[1px] hover:shadow-none active:translate-x-[2px] active:translate-y-[2px]";
@@ -56,6 +60,19 @@ const ControlBar = ({
       >
         <SkipForward className="h-6 w-6" strokeWidth={2.5} />
       </button>
+
+      {onToggleChat && (
+        <button
+          onClick={onToggleChat}
+          className={`${baseBtn} lg:hidden bg-card relative`}
+          aria-label="Toggle chat"
+        >
+          <MessageCircle className="h-6 w-6" strokeWidth={2.5} />
+          {hasUnread && (
+            <span className="absolute top-3 right-3 h-3 w-3 bg-destructive rounded-full border-2 border-foreground" />
+          )}
+        </button>
+      )}
     </div>
   );
 };

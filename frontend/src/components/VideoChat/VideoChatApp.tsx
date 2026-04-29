@@ -50,6 +50,17 @@ const VideoChatApp = () => {
   const [message, setMessage] = useState("");
   const [messages, setMessages] = useState<Message[]>([]);
 
+  // Mobile Chat State
+  const [showMobileChatState, setShowMobileChatState] = useState(false);
+  const showMobileChatRef = useRef(false);
+  const [hasUnread, setHasUnread] = useState(false);
+
+  const setShowMobileChat = useCallback((show: boolean) => {
+    showMobileChatRef.current = show;
+    setShowMobileChatState(show);
+    if (show) setHasUnread(false);
+  }, []);
+
   // UI Profile State
   const [profile, setProfile] = useState<Profile | null>(null);
   const [hydrated, setHydrated] = useState(false);
@@ -102,7 +113,9 @@ const VideoChatApp = () => {
     setRoomId("");
     setMessages([]);
     setMessage("");
-  }, []);
+    setHasUnread(false);
+    setShowMobileChat(false);
+  }, [setShowMobileChat]);
 
   const stopLocalStream = useCallback(() => {
     console.log("🛑 Stopping local stream...");
@@ -383,7 +396,12 @@ const VideoChatApp = () => {
       }
     });
 
-    socket.on("server:new_message", (data) => setMessages((prev) => [...prev, data]));
+    socket.on("server:new_message", (data) => {
+      setMessages((prev) => [...prev, data]);
+      if (!showMobileChatRef.current && window.innerWidth < 1024) {
+        setHasUnread(true);
+      }
+    });
 
     socket.on("server:partner_left", () => {
       console.log("👤 Partner left");
@@ -435,13 +453,6 @@ const VideoChatApp = () => {
     }
   }, [camOff]);
 
-  // Start chat automatically if onboarded
-  useEffect(() => {
-    if (hydrated && profile && appState === "idle") {
-      startChat();
-    }
-  }, [hydrated, profile]);
-
   // Keyboard shortcuts
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -481,39 +492,41 @@ const VideoChatApp = () => {
 
   const showOnboarding = hydrated && !profile;
   return (
-    <main className={`min-h-screen bg-background text-foreground flex flex-col transition-all duration-500 ${appState === 'connected' ? 'px-2 md:px-6 py-2 md:py-4 h-screen overflow-hidden' : 'px-4 md:px-8 py-6'}`}>
+    <main className={`min-h-screen bg-background text-foreground flex flex-col transition-all duration-500 ${appState !== 'idle' ? 'px-2 md:px-6 py-2 md:py-4 h-screen overflow-hidden' : 'px-4 md:px-8 py-6'}`}>
       {/* Hero header card — collapses when connected */}
-      <header className={`brutal-card bg-lime transition-all duration-500 ease-in-out ${appState === 'connected' ? 'px-6 py-3 mb-4' : 'px-6 md:px-10 py-6 md:py-8 mb-6'}`}>
+      <header className={`brutal-card bg-lime transition-all duration-500 ease-in-out ${appState !== 'idle' ? 'px-6 py-3 mb-4' : 'px-6 md:px-10 py-6 md:py-8 mb-6'}`}>
         <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 md:gap-6">
           <div className="flex items-start gap-4">
-            <div className={`shrink-0 rounded-2xl bg-foreground text-lime grid place-items-center border-2 border-foreground transition-all ${appState === 'connected' ? 'h-10 w-10' : 'h-14 w-14 shadow-brutal-sm'}`}>
-              <Flame className={appState === 'connected' ? 'h-5 w-5' : 'h-8 w-8'} strokeWidth={2.5} fill="currentColor" />
+            <div className={`shrink-0 rounded-2xl bg-foreground text-lime grid place-items-center border-2 border-foreground transition-all ${appState !== 'idle' ? 'h-10 w-10' : 'h-14 w-14 shadow-brutal-sm'}`}>
+              <Flame className={appState !== 'idle' ? 'h-5 w-5' : 'h-8 w-8'} strokeWidth={2.5} fill="currentColor" />
             </div>
             <div>
               <p className="label-eyebrow text-foreground/70 leading-none">Pair Up · v1</p>
-              <h1 className={`leading-[0.9] mt-1 font-black transition-all ${appState === 'connected' ? 'text-xl uppercase' : 'text-4xl md:text-6xl'}`}>
-                {appState === 'connected' ? "You're connected, bruhh." : <>Random video<br />chat, bruhh.</>}
+              <h1 className={`leading-[0.9] mt-1 font-black transition-all ${appState !== 'idle' ? 'text-xl uppercase' : 'text-4xl md:text-6xl'}`}>
+                {appState === 'connected' ? "You're connected, bruhh." : appState === 'searching' ? "Searching, bruhh." : <>Random video<br />chat, bruhh.</>}
               </h1>
-              {appState !== 'connected' && (
+              {appState === 'idle' && (
                 <p className="mt-3 text-foreground/80 max-w-xl text-sm md:text-base font-medium">
                   Spin the roulette. Meet someone awesome. Skip with one tap.
                   No accounts, no awkward intros.
                 </p>
               )}
               {profile && appState !== 'connected' && (
-                <button
-                  onClick={resetOnboarding}
-                  className="mt-3 inline-flex items-center gap-2 brutal-card-sm bg-card px-3 py-1.5 text-xs font-bold hover:-translate-x-0.5 hover:-translate-y-0.5 transition-transform"
-                >
-                  <Pencil className="h-3.5 w-3.5" strokeWidth={2.5} />
-                  Joined as <span className="text-primary">{profile.name}</span> · Edit
-                </button>
+                <div className="mt-4">
+                  <button
+                    onClick={resetOnboarding}
+                    className="inline-flex items-center gap-2 brutal-card-sm bg-card px-3 py-1.5 text-xs font-bold hover:-translate-x-0.5 hover:-translate-y-0.5 transition-transform"
+                  >
+                    <Pencil className="h-3.5 w-3.5" strokeWidth={2.5} />
+                    Joined as <span className="text-primary">{profile.name}</span> · Edit
+                  </button>
+                </div>
               )}
             </div>
           </div>
 
-          <div className={`flex gap-3 md:items-center ${appState === 'connected' ? 'flex-row' : 'flex-col md:items-end'}`}>
-            <div className={`brutal-card-sm bg-card flex items-center transition-all ${appState === 'connected' ? 'px-3 py-1.5 gap-2 min-w-fit' : 'px-4 py-3 gap-3 min-w-[220px]'}`}>
+          <div className={`flex gap-3 md:items-center ${appState !== 'idle' ? 'flex-row' : 'flex-col md:items-end'}`}>
+            <div className={`brutal-card-sm bg-card flex items-center transition-all ${appState !== 'idle' ? 'px-3 py-1.5 gap-2 min-w-fit' : 'px-4 py-3 gap-3 min-w-[220px]'}`}>
               {appState === "searching" ? (
                 <Loader2 className="h-5 w-5 animate-spin" strokeWidth={2.5} />
               ) : (
@@ -527,7 +540,7 @@ const VideoChatApp = () => {
               </div>
             </div>
 
-            {appState !== 'connected' && (
+            {appState === 'idle' && (
               <div className="brutal-card-sm bg-card px-4 py-3 flex items-center gap-3 min-w-[220px]">
                 <Users className="h-5 w-5" strokeWidth={2.5} />
                 <div>
@@ -541,63 +554,76 @@ const VideoChatApp = () => {
       </header>
 
       {/* Main stage — expands to fill height when connected */}
-      <section className={`flex-1 min-h-0 relative transition-all duration-500 ${appState === 'connected' ? 'grid gap-5 grid-cols-1 lg:grid-cols-[1fr_1fr_450px]' : 'grid gap-5 grid-cols-1 lg:grid-cols-[1fr_1fr_380px]'}`}>
+      <section className={`flex-1 min-h-0 relative transition-all duration-500 ${appState === 'idle' ? 'hidden lg:grid' : 'grid'} gap-5 grid-cols-1 lg:grid-cols-[1fr_1fr_450px]`}>
 
         {/* Local Video Tile — becomes PiP on small screens when connected */}
-        <div className={`transition-all duration-500 ease-in-out ${appState === 'connected'
-          ? 'absolute bottom-4 left-4 w-32 h-44 z-20 md:w-48 md:h-64 lg:relative lg:bottom-0 lg:left-0 lg:w-full lg:h-full lg:z-0'
-          : 'relative w-full h-full'
-          }`}>
-          <VideoTile
-            label={profile?.name ?? "You"}
-            status={appState === "idle" ? "Idle" : "Camera ready"}
-            isPip={appState === 'connected'}
-          >
-            <video ref={localVideoRef} autoPlay muted playsInline className="h-full w-full object-cover scale-x-[-1]" />
-          </VideoTile>
-        </div>
+          <div className={`transition-all duration-500 ease-in-out min-h-0 min-w-0 absolute bottom-4 left-4 w-32 h-44 z-20 md:w-48 md:h-64 lg:relative lg:bottom-0 lg:left-0 lg:w-full lg:h-full lg:z-0`}>
+            <VideoTile
+              label={profile?.name ?? "You"}
+              status={appState === "idle" ? "Idle" : "Camera ready"}
+              isPip={appState !== 'idle'}
+              showPlaceholder={appState !== 'connected'}
+            >
+              <video ref={localVideoRef} autoPlay muted playsInline className={`h-full w-full object-cover scale-x-[-1] ${appState !== 'connected' ? 'opacity-0' : 'opacity-100'}`} />
+            </VideoTile>
+          </div>
 
-        {/* Remote Video Tile — becomes Background on small screens when connected */}
-        <div className={`transition-all duration-500 h-full w-full ${appState === 'connected' ? 'absolute inset-0 z-10 lg:relative' : 'relative'
-          }`}>
-          <VideoTile
-            label="Stranger"
-            status={appState === "searching" ? "Searching…" : appState === "connected" ? "Connected" : "Waiting for stranger…"}
-          >
-            <video ref={remoteVideoRef} autoPlay playsInline className="h-full w-full object-cover" />
-          </VideoTile>
-        </div>
+          {/* Remote Video Tile — becomes Background on small screens when connected */}
+          <div className={`transition-all duration-500 h-full w-full min-h-0 min-w-0 absolute inset-0 z-10 lg:relative`}>
+            <VideoTile
+              label="Stranger"
+              status={appState === "searching" ? "Searching…" : appState === "connected" ? "Connected" : "Waiting for stranger…"}
+              showPlaceholder={appState !== 'connected'}
+            >
+              <video ref={remoteVideoRef} autoPlay playsInline className={`h-full w-full object-cover ${appState !== 'connected' ? 'opacity-0' : 'opacity-100'}`} />
+            </VideoTile>
+          </div>
 
-        {/* Chat Panel — hidden on mobile when connected to focus on video */}
-        <div className={`transition-all duration-500 h-full ${appState === 'connected' ? 'hidden lg:block' : 'block'
-          }`}>
-          <ChatPanel
-            messages={messages}
-            currentUserId={socketRef.current?.id}
-            inputValue={message}
-            onInputChange={setMessage}
-            onSend={sendMessage}
-            isConnected={appState === "connected"}
-          />
-        </div>
-      </section>
+          {/* Chat Panel — hidden on mobile when connected to focus on video */}
+          <div className={`transition-all duration-500 h-full min-h-0 min-w-0 ${showMobileChatState ? 'absolute inset-0 z-30 lg:relative lg:z-auto lg:block' : 'hidden lg:block'}`}>
+            <ChatPanel
+              messages={messages}
+              currentUserId={socketRef.current?.id}
+              inputValue={message}
+              onInputChange={setMessage}
+              onSend={sendMessage}
+              isConnected={appState === "connected"}
+            />
+          </div>
+        </section>
 
       {/* Controls */}
-      <footer className={`transition-all duration-500 z-30 ${appState === 'connected' ? 'mt-4 mb-2 lg:mt-4' : 'mt-8 mb-4'}`}>
-        <ControlBar
-          muted={muted}
-          onToggleMute={() => setMuted(!muted)}
-          camOff={camOff}
-          onToggleCam={() => setCamOff(!camOff)}
-          onEndCall={endChat}
-          onSkip={skipChat}
-          canSkip={appState === "connected" || appState === "searching"}
-        />
+      <footer className={`transition-all duration-500 z-40 relative ${
+        appState === 'idle' ? 'flex-1 lg:flex-none flex flex-col justify-center items-center lg:mt-4 lg:mb-2' : 'mt-4 mb-2 lg:mt-4'
+      }`}>
+        {appState === 'idle' ? (
+          <button
+            onClick={startChat}
+            className="inline-flex items-center gap-3 brutal-card bg-lime text-foreground px-10 py-5 text-xl font-black uppercase tracking-wider hover:-translate-x-[2px] hover:-translate-y-[2px] hover:shadow-none transition-all active:translate-x-[2px] active:translate-y-[2px]"
+          >
+            <Flame className="h-7 w-7" strokeWidth={2.5} fill="currentColor" />
+            Start Chatting
+          </button>
+        ) : (
+          <>
+            <ControlBar
+              muted={muted}
+              onToggleMute={() => setMuted(!muted)}
+              camOff={camOff}
+              onToggleCam={() => setCamOff(!camOff)}
+              onEndCall={endChat}
+              onSkip={skipChat}
+              canSkip={appState === "connected" || appState === "searching"}
+              onToggleChat={() => setShowMobileChat(!showMobileChatState)}
+              hasUnread={hasUnread}
+            />
 
-        <p className="text-center text-xs text-muted-foreground font-medium mt-4 tracking-wide uppercase">
-          Press <span className="px-2 py-0.5 bg-card border-2 border-foreground rounded-md font-bold text-foreground">SPACE</span> to skip ·
-          <span className="px-2 py-0.5 bg-card border-2 border-foreground rounded-md font-bold text-foreground ml-2">M</span> to mute
-        </p>
+            <p className="text-center text-xs text-muted-foreground font-medium mt-4 tracking-wide uppercase">
+              Press <span className="px-2 py-0.5 bg-card border-2 border-foreground rounded-md font-bold text-foreground">SPACE</span> to skip ·
+              <span className="px-2 py-0.5 bg-card border-2 border-foreground rounded-md font-bold text-foreground ml-2">M</span> to mute
+            </p>
+          </>
+        )}
       </footer>
 
       <OnboardingDialog open={showOnboarding} onComplete={handleComplete} />
