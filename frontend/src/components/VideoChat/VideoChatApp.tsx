@@ -21,21 +21,18 @@ interface Message {
 
 const rtcConfig: RTCConfiguration = {
   iceServers: [
-    { urls: 'stun:stun.l.google.com:19302' },
     {
-      urls: 'turn:34.126.207.137:3478',
-      username: 'pairup_333dfc31',
-      credential: '62d0f87b0181fa1e7b70289ed0587d3a'
+      urls: "stun:stun.l.google.com:19302",
     },
     {
-      urls: 'turn:34.126.207.137:3478?transport=tcp',
-      username: 'pairup_333dfc31',
-      credential: '62d0f87b0181fa1e7b70289ed0587d3a'
+      urls: [
+        "turn:20.198.25.231:3478?transport=udp",
+        "turn:20.198.25.231:3478?transport=tcp",
+      ],
+      username: "pairup",
+      credential: "securepassword123",
     },
   ],
-  iceCandidatePoolSize: 10,
-  bundlePolicy: 'max-bundle',
-  rtcpMuxPolicy: 'require',
 };
 const VideoChatApp = () => {
   // Logic Refs
@@ -120,19 +117,19 @@ const VideoChatApp = () => {
 
   const createPeerConnection = useCallback((socket: Socket, currentRoomId: string) => {
     console.log("🔧 Creating peer connection RIGHT NOW (synchronous)");
-    
+
     const peer = new RTCPeerConnection(rtcConfig);
     peerRef.current = peer;
 
     // Set up all handlers immediately
     peer.ontrack = (event) => {
       console.log(`🎥 Received remote ${event.track.kind} track (state: ${event.track.readyState})`);
-      
+
       if (remoteVideoRef.current && event.streams[0]) {
         console.log("📺 Setting remote stream to video element");
         const remoteStream = event.streams[0];
         remoteVideoRef.current.srcObject = remoteStream;
-        
+
         remoteVideoRef.current.play().catch(err => {
           console.error("Error auto-playing:", err);
           remoteVideoRef.current!.onclick = () => remoteVideoRef.current!.play();
@@ -151,12 +148,12 @@ const VideoChatApp = () => {
       if (event.candidate) {
         const c = event.candidate;
         console.log(`📡 ICE: ${c.type} | ${c.protocol}`);
-        
+
         if (c.type === 'relay') {
           hasRelayCandidate.current = true;
           console.log("✅ TURN working!");
         }
-        
+
         socket.emit("webrtc:ice", {
           roomId: currentRoomId,
           candidate: event.candidate,
@@ -196,7 +193,7 @@ const VideoChatApp = () => {
 
   const handleMatched = useCallback(async (socket: Socket, { roomId, role }: { roomId: string; role: string }) => {
     console.log(`\n${'='.repeat(60)}\n🎯 MATCHED! Room: ${roomId} | Role: ${role}\n${'='.repeat(60)}\n`);
-    
+
     setRoomId(roomId);
     setAppState("connected");
 
@@ -206,17 +203,17 @@ const VideoChatApp = () => {
     // STEP 2: Now get media (async, but peer already exists)
     try {
       let stream = localStreamRef.current;
-      
+
       if (!stream) {
         console.log("🎤 Getting media...");
         stream = await navigator.mediaDevices.getUserMedia({
           video: { width: { ideal: 1280 }, height: { ideal: 720 } },
           audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true },
         });
-        
+
         console.log("✅ Media OK");
         localStreamRef.current = stream;
-        
+
         if (localVideoRef.current) {
           localVideoRef.current.srcObject = stream;
           localVideoRef.current.muted = true;
@@ -252,10 +249,10 @@ const VideoChatApp = () => {
           offerToReceiveVideo: true,
           offerToReceiveAudio: true,
         });
-        
+
         await peer.setLocalDescription(offer);
         console.log("📤 Sending offer");
-        
+
         socket.emit("webrtc:offer", { roomId, offer });
       }
     } catch (error) {
@@ -295,7 +292,7 @@ const VideoChatApp = () => {
 
     socket.on("webrtc:offer", async ({ offer, roomId }) => {
       console.log("📥 Got offer");
-      
+
       const peer = peerRef.current;
       if (!peer) {
         console.error("❌ No peer! This should never happen now!");
@@ -305,7 +302,7 @@ const VideoChatApp = () => {
       try {
         await peer.setRemoteDescription(new RTCSessionDescription(offer));
         console.log("✅ Remote description set");
-        
+
         // Process queued candidates
         if (pendingCandidatesRef.current.length > 0) {
           console.log(`📦 Processing ${pendingCandidatesRef.current.length} queued candidates`);
@@ -319,11 +316,11 @@ const VideoChatApp = () => {
           }
           pendingCandidatesRef.current = [];
         }
-        
+
         const answer = await peer.createAnswer();
         await peer.setLocalDescription(answer);
         console.log("📤 Sending answer");
-        
+
         socket.emit("webrtc:answer", { roomId, answer });
       } catch (error) {
         console.error("❌ Offer error:", error);
@@ -332,7 +329,7 @@ const VideoChatApp = () => {
 
     socket.on("webrtc:answer", async ({ answer }) => {
       console.log("📥 Got answer");
-      
+
       const peer = peerRef.current;
       if (!peer) return;
 
@@ -344,7 +341,7 @@ const VideoChatApp = () => {
       try {
         await peer.setRemoteDescription(new RTCSessionDescription(answer));
         console.log("✅ Remote description set");
-        
+
         // Process queued candidates
         if (pendingCandidatesRef.current.length > 0) {
           console.log(`📦 Processing ${pendingCandidatesRef.current.length} queued`);
@@ -364,7 +361,7 @@ const VideoChatApp = () => {
 
     socket.on("webrtc:ice", async ({ candidate }) => {
       console.log("📥 Got ICE");
-      
+
       const peer = peerRef.current;
       if (!peer) {
         console.log("⏳ Queuing (no peer)");
@@ -464,7 +461,7 @@ const VideoChatApp = () => {
   // Monitor remote video
   useEffect(() => {
     if (appState !== "connected") return;
-    
+
     const interval = setInterval(() => {
       const remote = remoteVideoRef.current;
       if (remote?.srcObject) {
@@ -478,7 +475,7 @@ const VideoChatApp = () => {
         });
       }
     }, 5000);
-    
+
     return () => clearInterval(interval);
   }, [appState]);
 
