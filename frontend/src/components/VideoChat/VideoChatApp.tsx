@@ -26,8 +26,8 @@ const rtcConfig: RTCConfiguration = {
     },
     {
       urls: [
-        "turn:20.198.25.231:3478?transport=udp",
-        "turn:20.198.25.231:3478?transport=tcp",
+        "turn:40.81.245.227:3478?transport=udp",
+        "turn:40.81.245.227:3478?transport=tcp",
       ],
       username: "pairup",
       credential: "securepassword123",
